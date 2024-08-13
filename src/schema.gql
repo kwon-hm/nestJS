@@ -1,0 +1,113 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Department {
+  """부서 아이디"""
+  id: Int!
+
+  """부서 이름"""
+  name: String!
+}
+
+type User {
+  """사용자 아이디"""
+  id: Int!
+
+  """등급, 권한"""
+  grade: Int!
+
+  """사용자 아이디"""
+  user_id: String!
+
+  """사용자 비밀번호"""
+  pass: String!
+
+  """사용자 이름"""
+  user_name: String!
+
+  """이메일"""
+  email: String!
+
+  """부서"""
+  department: Department
+
+  """읽기 권한"""
+  read_grade: String
+
+  """쓰기 권한"""
+  write_grade: String
+  only_jpg: Int!
+  login_fail_count: Int!
+  login_fail_time: DateTime
+}
+
+type UsersWithCount {
+  users: [User!]!
+  count: Int!
+}
+
+type DepartmentWithCount {
+  departments: [Department!]!
+  count: Int!
+}
+
+"""Date time formatting YYYY-MM-DD hh:mm:ss"""
+scalar DateTime
+
+"""Date time formatting YYYY-MM-DD"""
+scalar Date
+
+type Query {
+  getUsers(user_id: String, offset: Int! = 0, limit: Int! = 10): UsersWithCount!
+  getUserByid(id: Float!): User
+  getDepartments(offset: Int! = 0, limit: Int! = 10, name: String): DepartmentWithCount!
+  getDepartmentByid(id: Float!): Department
+}
+
+type Mutation {
+  createUser(userInput: UserInput!): User!
+  updateUser(id: Int!, userInput: UserInput!): User!
+  deleteUser(id: Int!): Boolean!
+  createDepartment(createUserInput: CreateDepartmentInput!): Department!
+  updateDepartment(id: Int!, createDepartmentInput: CreateDepartmentInput!): Department!
+  deleteDepartment(id: Int!): Boolean!
+}
+
+input UserInput {
+  """사용자 아이디"""
+  id: Int
+
+  """등급, 권한"""
+  grade: Float!
+
+  """사용자 아이디"""
+  user_id: String!
+
+  """사용자 비밀번호"""
+  pass: String!
+
+  """사용자 이름"""
+  user_name: String!
+
+  """이메일"""
+  email: String!
+
+  """부서"""
+  department: Float!
+
+  """읽기 권한"""
+  read_grade: String!
+
+  """쓰기 권한"""
+  write_grade: String!
+  only_jpg: Float!
+  login_fail_count: Float!
+  login_fail_time: DateTime!
+  createdAt: DateTime!
+}
+
+input CreateDepartmentInput {
+  """부서 이름"""
+  name: String!
+}
