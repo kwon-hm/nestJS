@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department } from './entities/department';
 import { DepartmentService } from './department.service';
 import { DepartmentResolver } from './department.resolver';
-import { LoggerModule } from 'src/common/logger/logger.module';
+import { LoggerModule } from '../common/logger/logger.module';
 
 @Module({
     imports: [

@@ -2,7 +2,7 @@ import { Args, Context, Field, Int, Mutation, ObjectType, Query, Resolver } from
 import { Department } from './entities/department';
 import { DepartmentService } from './department.service';
 import { CreateDepartmentInput } from './dto/departmentInput';
-import { LoggerService } from 'src/common/logger/logger.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @ObjectType()
 class DepartmentWithCount {

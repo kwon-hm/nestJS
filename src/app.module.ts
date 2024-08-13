@@ -8,7 +8,7 @@ import { UserModule } from './user/user.module';
 import { DateTimeScalar, DateScalar } from "./common/date/date";
 import { DepartmentModule } from './department/department.module';
 import { Department } from './department/entities/department';
-import { LoggerModule } from "src/common/logger/logger.module";
+import { LoggerModule } from "./common/logger/logger.module";
 
 @Module({
     imports: [

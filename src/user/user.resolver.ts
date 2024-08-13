@@ -3,7 +3,7 @@ import { User } from "./entities/user";
 import { UserService } from './user.service';
 import { UserInput } from "./dto/userInput";
 import { DepartmentService } from '../department/department.service';
-import { LoggerService } from 'src/common/logger/logger.service';
+import { LoggerService } from '../common/logger/logger.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiCreatedResponse } from '@nestjs/swagger';
 
 @ObjectType()

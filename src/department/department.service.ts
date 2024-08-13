@@ -3,7 +3,7 @@ import { Department } from './entities/department';
 import { Like, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateDepartmentInput } from './dto/departmentInput';
-import { LoggerService } from 'src/common/logger/logger.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class DepartmentService {

@@ -4,7 +4,7 @@ import { User } from './entities/user';
 import { Repository, Like } from "typeorm";
 import { UserInput } from './dto/userInput';
 import { Department } from '../department/entities/department';
-import { LoggerService } from 'src/common/logger/logger.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class UserService {
