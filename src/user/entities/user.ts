@@ -59,6 +59,7 @@ export class User {
   @Column({ type: 'timestamp' })
   @Field(() => Date, {nullable: true, })
   readonly login_fail_time?: DateTimeScalar;
+    result: { id: Department; };
 
    
   

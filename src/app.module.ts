@@ -26,7 +26,7 @@ import { LoggerModule } from "./common/logger/logger.module";
             port: 3306,
             username: 'root',
             password: '1234',
-            database: 'test',
+            database: 'ylab_preview',
             synchronize: false,
             logging: true,
             entities: [

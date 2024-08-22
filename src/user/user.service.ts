@@ -61,7 +61,10 @@ export class UserService {
         context: any,
     ) {
         try {
-            const user = await this.userRepository.findOne({where: {id}})
+            const user = await this.userRepository.findOne({
+                where: {id},
+                relations: ['department'],
+            })
 
             this.logger.log(`getUserByidExe - user: ${JSON.stringify(user)}`, context)
             return user
@@ -116,10 +119,15 @@ export class UserService {
             const user = await this.userRepository.findOne({where: {id}});
             if (!user) throw new NotFoundException('User not found');
 
+            const department = await this.departmentRepository.findOne({ where: { id: userDataInput.department } });
+            if (!department) throw new NotFoundException('Department not found');
+
             Object.assign(user, userDataInput); // Update user entity with new data
-            const result = await this.userRepository.save(user); // Save updated user to the database
+            let result = await this.userRepository.save(user); // Save updated user to the database
+            if(result) result.department = department
 
             this.logger.log(`updateUserExe - res: ${JSON.stringify(result)}`, context)
+
             return result
         } catch (err) {
             this.logger.error(`updateUserExe ${err}`, context)
