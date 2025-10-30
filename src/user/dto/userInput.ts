@@ -1,69 +1,69 @@
-import { Field, InputType, Int, ObjectType } from "@nestjs/graphql";
-import { DateTimeScalar } from "../../common/date/date";
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , PrimaryColumn } from "typeorm";
+import { Field, InputType, Int } from '@nestjs/graphql';
+import {
+  IsEmail,
+  IsNumber,
+  IsString,
+  MinLength,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 @InputType()
-@ObjectType()
-@Entity({ name: "members", comment: "사용자"})
 export class UserInput {
-
-  @ApiProperty()
-  @PrimaryGeneratedColumn("increment")
-  @Field(() => Int, {nullable: true, description: '사용자 아이디'})
-  readonly id: number;
-
-  @Column()
-  @Field(() => Number, { description: '등급, 권한'})
+  @ApiProperty({ description: '등급, 권한' })
+  @Field(() => Int, { description: '등급, 권한' })
+  @IsNumber()
   grade: number;
 
-  @Column()
-  @Field(() => String, { description: '사용자 아이디'})
-  user_id: String;
+  @ApiProperty({ description: '사용자 아이디' })
+  @Field(() => String, { description: '사용자 아이디' })
+  @IsString()
+  user_id: string;
 
-  @Column()
-  @Field(type => String, { description: '사용자 비밀번호'})
+  @ApiProperty({ description: '사용자 비밀번호' })
+  @Field(() => String, { description: '사용자 비밀번호' })
+  @IsString()
+  @MinLength(4, { message: '비밀번호는 최소 4자 이상이어야 합니다' })
   pass: string;
 
-  @Column()
-  @Field(() => String, { description: '사용자 이름'})
-  user_name: String;
+  @ApiProperty({ description: '사용자 이름' })
+  @Field(() => String, { description: '사용자 이름' })
+  @IsString()
+  user_name: string;
 
-  @Column()
-  @Field(type => String, { description: '이메일'})
+  @ApiProperty({ description: '이메일' })
+  @Field(() => String, { description: '이메일' })
+  @IsEmail({}, { message: '올바른 이메일 형식이 아닙니다' })
   email: string;
 
-  @Column()
-  @Field(() => Number, { description: '부서'})
+  @ApiProperty({ description: '부서' })
+  @Field(() => Int, { description: '부서' })
+  @IsNumber()
   department: number;
 
-  @Column()
-  @Field(() => String, { description: '읽기 권한'})
-  read_grade: String;
-  
-  @Column()
-  @Field(() => String, { description: '쓰기 권한'})
-  write_grade: String;
+  @ApiProperty({ description: '읽기 권한' })
+  @Field(() => String, { description: '읽기 권한' })
+  @IsString()
+  read_grade: string;
 
-  @Column()
-  @Field(() => Number)
+  @ApiProperty({ description: '쓰기 권한' })
+  @Field(() => String, { description: '쓰기 권한' })
+  @IsString()
+  write_grade: string;
+
+  @ApiProperty({ description: 'JPG만 허용 여부' })
+  @Field(() => Int, { description: 'JPG만 허용 여부' })
+  @IsNumber()
   only_jpg: number;
 
-  @Column()
-  @Field(() => Number)
+  @ApiProperty({ description: '로그인 실패 횟수', required: false })
+  @Field(() => Int, { nullable: true, description: '로그인 실패 횟수' })
+  @IsOptional()
+  @IsNumber()
   login_fail_count?: number;
-  
-  @Column({ type: 'timestamp' })
-  @Field(() => Date)
-  login_fail_time?: DateTimeScalar;
-  
-  //TypeORM Special Columns
-  @CreateDateColumn()
-  @Field(() => Date)
-  createdAt: DateTimeScalar;
 
-//   @UpdateDateColumn()
-//   @Field(() => Date)
-//   updatedAt: Date;
-
+  @ApiProperty({ description: '로그인 실패 시간', required: false })
+  @Field(() => Date, { nullable: true, description: '로그인 실패 시간' })
+  @IsOptional()
+  login_fail_time?: Date;
 }

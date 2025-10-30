@@ -1,75 +1,62 @@
-import { Field, InputType, Int, ObjectType } from "@nestjs/graphql";
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , PrimaryColumn, ManyToOne, JoinColumn, OneToOne } from "typeorm";
-import { MinLength, MaxLength, IsEmail } from "class-validator";
-import { DateTimeScalar } from "../../common/date/date";
-import { Department } from "../../department/entities/department";
+import { Field, Int, ObjectType } from '@nestjs/graphql';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  JoinColumn,
+  OneToOne,
+} from 'typeorm';
+import { Department } from '../../department/entities/department';
 
-// @InputType()
 @ObjectType()
-@Entity({ name: "members", comment: "사용자"})
+@Entity({ name: 'members', comment: '사용자' })
 export class User {
-
   @PrimaryGeneratedColumn()
-  @Field(() => Int, {nullable: false, description: '사용자 아이디'})
+  @Field(() => Int, { nullable: false, description: '사용자 아이디' })
   readonly id: number;
 
   @Column()
-  @Field(() => Int, {nullable: false, description: '등급, 권한'})
+  @Field(() => Int, { nullable: false, description: '등급, 권한' })
   readonly grade: number;
 
   @Column()
-  @Field(type => String, {nullable: false, description: '사용자 아이디'})
-  readonly user_id: String;
+  @Field(() => String, { nullable: false, description: '사용자 아이디' })
+  readonly user_id: string;
 
   @Column()
-  @Field(type => String, {nullable: false, description: '사용자 비밀번호'})
-  @MinLength(4)
+  @Field(() => String, { nullable: false, description: '사용자 비밀번호' })
   readonly pass: string;
 
   @Column()
-  @Field(() => String, {nullable: false, description: '사용자 이름'})
-  readonly user_name: String;
+  @Field(() => String, { nullable: false, description: '사용자 이름' })
+  readonly user_name: string;
 
   @Column()
-  @Field(type => String, {nullable: false, description: '이메일'})
-  @IsEmail()
+  @Field(() => String, { nullable: false, description: '이메일' })
   readonly email: string;
 
   @OneToOne(() => Department)
   @JoinColumn({ name: 'department' })
-  @Field(() => Department, {nullable: true, description: '부서'})
+  @Field(() => Department, { nullable: true, description: '부서' })
   department?: Department;
 
   @Column()
-  @Field(() => String, {nullable: true, description: '읽기 권한'})
-  readonly read_grade: String;
-  
-  @Column()
-  @Field(() => String, {nullable: true, description: '쓰기 권한'})
-  readonly write_grade: String;
+  @Field(() => String, { nullable: true, description: '읽기 권한' })
+  readonly read_grade: string;
 
   @Column()
-  @Field(() => Int, {nullable: false, })
+  @Field(() => String, { nullable: true, description: '쓰기 권한' })
+  readonly write_grade: string;
+
+  @Column()
+  @Field(() => Int, { nullable: false, description: 'JPG만 허용 여부' })
   readonly only_jpg: number;
 
-  @Column()
-  @Field(() => Int, {nullable: false, })
+  @Column({ nullable: true })
+  @Field(() => Int, { nullable: true, description: '로그인 실패 횟수' })
   readonly login_fail_count?: number;
-  
-  @Column({ type: 'timestamp' })
-  @Field(() => Date, {nullable: true, })
-  readonly login_fail_time?: DateTimeScalar;
-    result: { id: Department; };
 
-   
-  
-  //TypeORM Special Columns
-//   @CreateDateColumn()
-//   @Field(() => Date)
-//   createdAt: Date;
-
-//   @UpdateDateColumn()
-//   @Field(() => Date)
-//   updatedAt: Date;
-
+  @Column({ type: 'timestamp', nullable: true })
+  @Field(() => Date, { nullable: true, description: '로그인 실패 시간' })
+  readonly login_fail_time?: Date;
 }

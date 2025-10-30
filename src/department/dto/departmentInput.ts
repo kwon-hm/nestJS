@@ -1,11 +1,11 @@
-import { Field, InputType, ObjectType } from "@nestjs/graphql";
-import { Column, Entity } from "typeorm";
+import { Field, InputType } from '@nestjs/graphql';
+import { IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 @InputType()
-@ObjectType()
-@Entity({ name: "departments", comment: "부서"})
 export class CreateDepartmentInput {
-    @Column()
-    @Field(() => String, {nullable: false, description: '부서 이름'})
-    readonly name: string;
+  @ApiProperty({ description: '부서 이름' })
+  @Field(() => String, { nullable: false, description: '부서 이름' })
+  @IsString({ message: '부서 이름은 문자열이어야 합니다' })
+  readonly name: string;
 }

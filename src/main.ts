@@ -1,51 +1,70 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger as NestLogger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { UserModule } from './user/user.module';
-const port = process.env.port || 3000
 
-async function bootstrap() {
-    const app = await NestFactory.create(AppModule, {
-        bufferLogs: true,
-    });
-    app.useGlobalPipes(
-        // new ValidationPipe({
-            // whitelist: true, // null이거나 정의되지 않은 모든 속성의 유효성 검사를 건너뜀
-            // forbidNonWhitelisted: true, // 허용 목록에 없는 속성을 제거하는 대신 유효성 검사기가 예외를 발생
-            // transform: true, // DTO 클래스에 따라 지정된 유형 객체로 자동 변환
-        // })
-    )
-    app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
 
-    const options = new DocumentBuilder()
-        .setTitle('Your API Title')
-        .setDescription('Your API description')
-        .setVersion('1.0')
-        .addServer(`http://localhost:${port}/`, 'Local environment')
-        .addServer('https://staging.yourapi.com/', 'Staging')
-        .addServer('https://production.yourapi.com/', 'Production')
-        .addTag('Your API Tag')
-        .build();
+  // Validation Pipe 활성화
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // DTO에 정의되지 않은 속성 제거
+      forbidNonWhitelisted: true, // 허용되지 않은 속성이 있으면 에러 발생
+      transform: true, // 자동 타입 변환
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
-    const catDocument = SwaggerModule.createDocument(app, options, {
-        include: [UserModule],
-        });
-    SwaggerModule.setup('api-docs/uses', app, catDocument);
+  // Winston Logger 사용
+  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
-    const document = SwaggerModule.createDocument(app, options);
-    SwaggerModule.setup('api-docs', app, document);
-  
-    await app.listen(port);
+  // ConfigService로 환경 변수 가져오기
+  const configService = app.get(ConfigService);
+  const port = configService.get('PORT') || 3000;
+  const nodeEnv = configService.get('NODE_ENV') || 'development';
 
+  // Swagger 설정
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('NestJS GraphQL API')
+    .setDescription('User and Department Management API')
+    .setVersion('1.0')
+    .addServer(`http://localhost:${port}/`, 'Local environment')
+    .addTag('Users')
+    .addTag('Departments')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document);
+
+  await app.listen(port);
+
+  NestLogger.log(
+    `🚀 Application is running on: http://localhost:${port}`,
+    'Bootstrap',
+  );
+  NestLogger.log(
+    `📚 API Documentation: http://localhost:${port}/api-docs`,
+    'Bootstrap',
+  );
+  NestLogger.log(
+    `🔍 GraphQL Playground: http://localhost:${port}/graphql`,
+    'Bootstrap',
+  );
+  NestLogger.log(`🌍 Environment: ${nodeEnv}`, 'Bootstrap');
 }
 
 void (async (): Promise<void> => {
-    try {
-      const url = await bootstrap();
-      NestLogger.log(url, '🚀🚀🚀 Nest application successfully started.');
-    } catch (error) {
-      NestLogger.error(error, 'Nest application error');
-    }
+  try {
+    await bootstrap();
+  } catch (error) {
+    NestLogger.error('❌ Application failed to start', error);
+    process.exit(1);
+  }
 })();

@@ -1,134 +1,186 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Department } from './entities/department';
 import { Like, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateDepartmentInput } from './dto/departmentInput';
 import { LoggerService } from '../common/logger/logger.service';
+import { RequestContext } from '../common/types/context.type';
 
 @Injectable()
 export class DepartmentService {
-    constructor(
-        private readonly logger: LoggerService,
+  constructor(
+    private readonly logger: LoggerService,
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
+  ) {}
 
-        @InjectRepository(Department) 
-        private departmentRepository: Repository<Department>,
-    ) {}
+  /**
+   * Get all departments with pagination and optional filtering.
+   * @param offset - Pagination offset
+   * @param limit - Pagination limit
+   * @param name - Optional name filter
+   * @param context - Request context for logging
+   * @returns Object containing departments array and total count
+   */
+  async getDepartments(
+    offset: number,
+    limit: number,
+    name: string,
+    context: RequestContext,
+  ): Promise<{ departments: Department[]; count: number }> {
+    try {
+      const where = name ? { name: Like(`%${name}%`) } : {};
 
-    /**
-     * Get all departments.
-     * @param limit: number
-     * @param offset: number
-     * @returns {departments: Department[], count: number}
-     */
-    async getDepartmentsExe(
-        offset: number,
-        limit: number,
-        name: string,
-        context: any,
-    ): Promise<{ departments: Department[]; count: number; }> {
-        try {
-            let where = {}
-            if(name) where = {name: Like(`%${name}%`)}
-            const [departments, count] = await this.departmentRepository.findAndCount({
-                where,
-                skip: offset,
-                take: limit,
-            })
+      const [departments, count] = await this.departmentRepository.findAndCount(
+        {
+          where,
+          skip: offset,
+          take: limit,
+        },
+      );
 
-            this.logger.log(`getDepartmentsExe - count: ${count}`, context)
-            return {departments, count}
-        } catch (err) {
-            this.logger.error(`getDepartmentsExe ${err}`, context)
-            throw new Error(`getDepartmentsExe ${err}`)
-        }
+      this.logger.log(`Retrieved ${count} departments`, context);
+      return { departments, count };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get departments: ${error.message}`,
+        context,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to retrieve departments');
     }
+  }
 
-    /**
-     * Get department by id.
-     * @param id 
-     * @returns Department
-     */
-    async getDepartmentByidExe(
-        id: number,
-        context: any,
-    ) {
-        try {
-            const department = await this.departmentRepository.findOne({where: {id}})
+  /**
+   * Get department by ID.
+   * @param id - Department ID
+   * @param context - Request context for logging
+   * @returns Department entity or null
+   */
+  async getDepartmentById(
+    id: number,
+    context: RequestContext,
+  ): Promise<Department | null> {
+    try {
+      const department = await this.departmentRepository.findOne({
+        where: { id },
+      });
 
-            this.logger.log(`getDepartmentByidExe - department: ${department}`, context)
-            return department
-        } catch (err) {
-            this.logger.error(`getDepartmentByidExe ${err}`, context)
-            throw new Error(`getDepartmentByidExe ${err}`)
-        }
+      if (department) {
+        this.logger.log(`Retrieved department with id: ${id}`, context);
+      }
+
+      return department;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get department by id ${id}: ${error.message}`,
+        context,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to retrieve department');
     }
+  }
 
-    /**
-     * create department.
-     * @param Department
-     * @returns Department
-     */
-    createDepartmentExe(
-        createDepartmentData: CreateDepartmentInput,
-        context: any,
-    ) {
-        try {
-            const newDepartment = this.departmentRepository.create(createDepartmentData)
-            const result = this.departmentRepository.save(newDepartment)
+  /**
+   * Create a new department.
+   * @param departmentInput - Department input data
+   * @param context - Request context for logging
+   * @returns Created department entity
+   */
+  async createDepartment(
+    departmentInput: CreateDepartmentInput,
+    context: RequestContext,
+  ): Promise<Department> {
+    try {
+      const newDepartment = this.departmentRepository.create(departmentInput);
+      const result = await this.departmentRepository.save(newDepartment);
 
-            this.logger.log(`createDepartmentExe - result: ${JSON.stringify(result)}`, context)
-            return result
-        } catch (err) {
-            this.logger.error(`createDepartmentExe ${err}`, context)
-            throw new Error(`createDepartmentExe ${err}`)
-        }
+      this.logger.log(`Created department with id: ${result.id}`, context);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create department: ${error.message}`,
+        context,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to create department');
     }
+  }
 
-    /**
-     * update department.
-     * @param Department
-     * @returns Department
-     */
-    async updateDepartmentExe(
-        id: number,
-        createDepartmentData: CreateDepartmentInput,
-        context: any,
-    ) {
-        try {
-            const department = await this.departmentRepository.findOne({where: {id}});
-            if (!department) throw new NotFoundException('Department not found');
+  /**
+   * Update an existing department.
+   * @param id - Department ID to update
+   * @param departmentInput - Updated department data
+   * @param context - Request context for logging
+   * @returns Updated department entity
+   */
+  async updateDepartment(
+    id: number,
+    departmentInput: CreateDepartmentInput,
+    context: RequestContext,
+  ): Promise<Department> {
+    try {
+      const department = await this.departmentRepository.findOne({
+        where: { id },
+      });
+      if (!department) {
+        throw new NotFoundException(`Department with id ${id} not found`);
+      }
 
-            Object.assign(department, createDepartmentData); // Update department entity with new data
-            const result = this.departmentRepository.save(department); // Save updated department to the database
+      Object.assign(department, departmentInput);
+      const result = await this.departmentRepository.save(department);
 
-            this.logger.log(`updateDepartmentExe - result: ${JSON.stringify(result)}`, context)
-            return result
-        } catch (err) {
-            this.logger.error(`updateDepartmentExe ${err}`, context)
-            throw new Error(`updateDepartmentExe ${err}`)
-        }
+      this.logger.log(`Updated department with id: ${id}`, context);
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to update department ${id}: ${error.message}`,
+        context,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to update department');
     }
+  }
 
-    /**
-     * delete department.
-     * @param id
-     * @returns Department
-     */
-    async deleteDepartmentExe(
-        id: number,
-        context: any,
-    ) {
-        try {
-            const department = await this.departmentRepository.findOne({where: {id}});
-            if (!department) throw new NotFoundException('Department not found');
+  /**
+   * Delete a department.
+   * @param id - Department ID to delete
+   * @param context - Request context for logging
+   * @returns True if deletion was successful
+   */
+  async deleteDepartment(
+    id: number,
+    context: RequestContext,
+  ): Promise<boolean> {
+    try {
+      const department = await this.departmentRepository.findOne({
+        where: { id },
+      });
+      if (!department) {
+        throw new NotFoundException(`Department with id ${id} not found`);
+      }
 
-            const result = await this.departmentRepository.remove(department);
+      await this.departmentRepository.remove(department);
 
-            this.logger.log(`deleteDepartmentExe - result: ${JSON.stringify(result)}`, context)
-            return !!result
-        } catch (err) {
-            this.logger.error(`deleteDepartmentExe ${err}`, context)
-            throw new Error(`deleteDepartmentExe err: ${err}`)
-        }
+      this.logger.log(`Deleted department with id: ${id}`, context);
+      return true;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to delete department ${id}: ${error.message}`,
+        context,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to delete department');
     }
+  }
 }

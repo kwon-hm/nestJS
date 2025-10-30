@@ -1,270 +1,432 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { AppModule } from '../src/app.module';
 
-describe('AppController (e2e)', () => {
-    let app: INestApplication;
+describe('GraphQL API E2E Tests', () => {
+  let app: INestApplication;
+  let createdUserId: number;
+  let createdDepartmentId: number;
 
-    beforeAll(async () => {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [AppModule],
-        }).compile();
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
 
-        app = moduleFixture.createNestApplication();
-        await app.init();
+    app = moduleFixture.createNestApplication();
+
+    // ValidationPipe 적용 (실제 환경과 동일하게)
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    );
+
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  // ==================== Department Tests ====================
+  describe('Department API', () => {
+    describe('createDepartment', () => {
+      it('새 부서를 생성해야 합니다', () => {
+        const query = `
+          mutation {
+            createDepartment(createDepartmentInput: { name: "테스트부서E2E" }) {
+              id
+              name
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.createDepartment).toBeDefined();
+            expect(res.body.data.createDepartment.name).toBe('테스트부서E2E');
+            createdDepartmentId = res.body.data.createDepartment.id;
+          });
+      });
     });
 
-    afterAll(done => {
-        app.close()
-        done()
-    })
+    describe('getDepartments', () => {
+      it('부서 목록을 조회해야 합니다', () => {
+        const query = `
+          query {
+            getDepartments(offset: 0, limit: 10) {
+              departments {
+                id
+                name
+              }
+              count
+            }
+          }
+        `;
 
-    describe('users', () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getDepartments).toBeDefined();
+            expect(res.body.data.getDepartments.count).toBeGreaterThanOrEqual(
+              1,
+            );
+            expect(
+              Array.isArray(res.body.data.getDepartments.departments),
+            ).toBe(true);
+          });
+      });
 
-        const user = {
-            "id": 0,
-            "user_name": "테스트",
-            "grade": 0,
-            "user_id": "test21",
-            "pass": "1234",
-            "email": "a",
-            "department": {
-                "id": 1,
-                "name": "콘텐츠운영사업본부"
-            },
-            "read_grade": "read_grade",
-            "write_grade": "write_grade",
-            "only_jpg": 0,
-            "login_fail_count": 0,
-            "login_fail_time": null
+      it('이름으로 부서를 검색해야 합니다', () => {
+        const query = `
+          query {
+            getDepartments(offset: 0, limit: 10, name: "테스트") {
+              departments {
+                id
+                name
+              }
+              count
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getDepartments).toBeDefined();
+          });
+      });
+    });
+
+    describe('getDepartmentById', () => {
+      it('ID로 부서를 조회해야 합니다', () => {
+        const query = `
+          query {
+            getDepartmentById(id: ${createdDepartmentId}) {
+              id
+              name
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getDepartmentById).toBeDefined();
+            expect(res.body.data.getDepartmentById.id).toBe(
+              createdDepartmentId,
+            );
+          });
+      });
+    });
+
+    describe('updateDepartment', () => {
+      it('부서 정보를 수정해야 합니다', () => {
+        const query = `
+          mutation {
+            updateDepartment(
+              id: ${createdDepartmentId}
+              createDepartmentInput: { name: "수정된테스트부서" }
+            ) {
+              id
+              name
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.updateDepartment).toBeDefined();
+            expect(res.body.data.updateDepartment.name).toBe(
+              '수정된테스트부서',
+            );
+          });
+      });
+    });
+  });
+
+  // ==================== User Tests ====================
+  describe('User API', () => {
+    describe('createUser', () => {
+      it('새 사용자를 생성해야 합니다', () => {
+        const query = `
+          mutation {
+            createUser(
+              userInput: {
+                grade: 1
+                user_id: "e2e_test_user"
+                pass: "test1234"
+                user_name: "E2E 테스트 사용자"
+                email: "e2etest@example.com"
+                department: ${createdDepartmentId}
+                read_grade: "all"
+                write_grade: "all"
+                only_jpg: 0
+              }
+            ) {
+              id
+              user_id
+              user_name
+              email
+              department {
+                id
+                name
+              }
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.createUser).toBeDefined();
+            expect(res.body.data.createUser.user_id).toBe('e2e_test_user');
+            createdUserId = res.body.data.createUser.id;
+          });
+      });
+
+      it('유효하지 않은 이메일로 사용자 생성 시 에러가 발생해야 합니다', () => {
+        const query = `
+          mutation {
+            createUser(
+              userInput: {
+                grade: 1
+                user_id: "invalid_email_user"
+                pass: "test1234"
+                user_name: "Invalid Email User"
+                email: "invalid-email"
+                department: ${createdDepartmentId}
+                read_grade: "all"
+                write_grade: "all"
+                only_jpg: 0
+              }
+            ) {
+              id
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors).toBeDefined();
+          });
+      });
+    });
+
+    describe('getUsers', () => {
+      it('사용자 목록을 조회해야 합니다', () => {
+        const query = `
+          query {
+            getUsers(offset: 0, limit: 10) {
+              users {
+                id
+                user_id
+                user_name
+                email
+              }
+              count
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getUsers).toBeDefined();
+            expect(res.body.data.getUsers.count).toBeGreaterThanOrEqual(1);
+            expect(Array.isArray(res.body.data.getUsers.users)).toBe(true);
+          });
+      });
+
+      it('user_id로 사용자를 검색해야 합니다', () => {
+        const query = `
+          query {
+            getUsers(offset: 0, limit: 10, user_id: "e2e_test") {
+              users {
+                id
+                user_id
+              }
+              count
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getUsers).toBeDefined();
+          });
+      });
+    });
+
+    describe('getUserById', () => {
+      it('ID로 사용자를 조회해야 합니다', () => {
+        const query = `
+          query {
+            getUserById(id: ${createdUserId}) {
+              id
+              user_id
+              user_name
+              email
+              department {
+                id
+                name
+              }
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getUserById).toBeDefined();
+            expect(res.body.data.getUserById.id).toBe(createdUserId);
+            expect(res.body.data.getUserById.user_id).toBe('e2e_test_user');
+          });
+      });
+
+      it('존재하지 않는 사용자 조회 시 null을 반환해야 합니다', () => {
+        const query = `
+          query {
+            getUserById(id: 999999) {
+              id
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getUserById).toBeNull();
+          });
+      });
+    });
+
+    describe('updateUser', () => {
+      it('사용자 정보를 수정해야 합니다', () => {
+        const query = `
+          mutation {
+            updateUser(
+              id: ${createdUserId}
+              userInput: {
+                grade: 2
+                user_id: "e2e_test_user"
+                pass: "updated1234"
+                user_name: "수정된 E2E 사용자"
+                email: "updated@example.com"
+                department: ${createdDepartmentId}
+                read_grade: "limited"
+                write_grade: "limited"
+                only_jpg: 1
+              }
+            ) {
+              id
+              user_name
+              email
+              grade
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.updateUser).toBeDefined();
+            expect(res.body.data.updateUser.user_name).toBe(
+              '수정된 E2E 사용자',
+            );
+            expect(res.body.data.updateUser.email).toBe('updated@example.com');
+            expect(res.body.data.updateUser.grade).toBe(2);
+          });
+      });
+    });
+
+    describe('deleteUser', () => {
+      it('사용자를 삭제해야 합니다', () => {
+        const query = `
+          mutation {
+            deleteUser(id: ${createdUserId})
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.deleteUser).toBe(true);
+          });
+      });
+
+      it('삭제된 사용자 조회 시 null을 반환해야 합니다', () => {
+        const query = `
+          query {
+            getUserById(id: ${createdUserId}) {
+              id
+            }
+          }
+        `;
+
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({ query })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.getUserById).toBeNull();
+          });
+      });
+    });
+  });
+
+  // ==================== Cleanup ====================
+  describe('Cleanup', () => {
+    it('테스트 부서를 삭제해야 합니다', () => {
+      const query = `
+        mutation {
+          deleteDepartment(id: ${createdDepartmentId})
         }
+      `;
 
-        // createUser
-        it('should create a user using createUser mutation', () => {
-            try {
-
-                const query = `
-                mutation{
-                    createUser(
-                        userInput:{
-                        user_id: "${user.user_id}"
-                        grade: 0
-                        pass: "1234"
-                        user_name: "테스트"
-                        email: "a"
-                        department: 1
-                        read_grade: "read_grade"
-                        write_grade: "write_grade"
-                        only_jpg: 0
-                        login_fail_count: 0
-                        login_fail_time: "2024"
-                        createdAt: "2023"
-                        }
-                    ){
-                        id
-                        user_name
-                        grade
-                        user_id
-                        pass
-                        email
-                        department{
-                        id
-                        name
-                        }
-                        read_grade
-                        write_grade
-                        only_jpg
-                        login_fail_count
-                        login_fail_time
-                    }
-                }
-                `
-                return request(app.getHttpServer())
-                    .post('/graphql')
-                    .send({ query })
-                    .expect(200)
-                    .expect((res) => {
-                        console.log("createUser 결과", JSON.stringify(res.body.data.createUser))
-                        user.id = res.body.data.createUser.id
-                        expect(res.body.data.createUser).toEqual(user)
-                });
-            } catch (err) {
-                throw err
-            }
-        })
-        
-        // getUsers
-        it('should query getUsers and return users', () => {
-            try {
-                const query = `
-                query {
-                    getUsers(offset: 0, limit: 10) {
-                    users {
-                        id
-                        user_id
-                    }
-                    count
-                    }
-                }
-                `;
-                return request(app.getHttpServer())
-                    .post('/graphql')
-                    .send({ query })
-                    .expect(200)
-                    .expect((res) => {
-                        console.log("getUsers 결과", JSON.stringify(res.body.data.getUsers))
-                        expect(res.body.data.getUsers.users.length).toEqual(10)
-                    });
-            } catch (err) {
-                throw err
-            }
+      return request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.data.deleteDepartment).toBe(true);
         });
-
-        // getUserByid
-        it('should query getUserByid and return a user', () => {
-            try {
-                // const user = {
-                //     "id": userNo,
-                //     "user_name": "테스트",
-                //     "grade": 0,
-                //     "user_id": "test2",
-                //     "pass": "1234",
-                //     "email": "a",
-                //     "department": null,
-                //     "read_grade": "read_grade",
-                //     "write_grade": "write_grade",
-                //     "only_jpg": 0,
-                //     "login_fail_count": 0,
-                //     "login_fail_time": null
-                // }
-                const query = `
-                query {
-                    getUserByid(id: ${user.id} ){
-                        id
-                        user_name
-                        grade
-                        user_id
-                        pass
-                        email
-                        department{
-                            id
-                            name
-                        }
-                        read_grade
-                        write_grade
-                        only_jpg
-                        login_fail_count
-                        login_fail_time
-                    }
-                }
-                `
-                return request(app.getHttpServer())
-                    .post('/graphql')
-                    .send({ query })
-                    .expect(200)
-                    .expect((res) => {
-                        console.log("getUserByid 결과", JSON.stringify(res.body.data.getUserByid))
-                        expect(res.body.data.getUserByid).toEqual(user)
-                    });
-            } catch (err) {
-                throw err
-            }
-        })
-
-        // updateUser
-        it('should update a user using updateUser mutation', () => {
-            try {
-                // const user = {
-                //     "id": userNo,
-                //     "user_name": "테스트12222",
-                //     "grade": 0,
-                //     "user_id": "test1",
-                //     "pass": "",
-                //     "email": "a",
-                //     "department": {
-                //       "id": 1
-                //     },
-                //     "read_grade": "read_grade1",
-                //     "write_grade": "write_grade1",
-                //     "only_jpg": 0,
-                //     "login_fail_count": 0,
-                //     "login_fail_time": null
-                // }
-    
-                const query = `
-                mutation{
-                    updateUser(
-                        id: ${user.id}
-                        userInput:{
-                            user_id: "${user.user_id}"
-                            grade: 0
-                            pass: "${user.pass}"
-                            user_name: "${user.user_name}"
-                            email: "a"
-                            department: 1
-                            read_grade: "${user.read_grade}"
-                            write_grade: "${user.write_grade}"
-                            only_jpg: 0
-                            login_fail_count: 0
-                            login_fail_time: "2024-06-06"
-                            createdAt: "2024-06-06"
-                        }
-                    ){
-                        id
-                        user_name
-                        grade
-                        user_id
-                        pass
-                        email
-                        department{
-                            id
-                            name
-                        }
-                        read_grade
-                        write_grade
-                        only_jpg
-                        login_fail_count
-                        login_fail_time
-                    }
-                }
-                `
-                return request(app.getHttpServer())
-                    .post('/graphql')
-                    .send({ query })
-                    .expect(200)
-                    .expect((res) => {
-                        console.log("updateUser 결과", JSON.stringify(res.body.data.updateUser))
-                        expect(res.body.data.updateUser).toEqual(user)
-                });
-            } catch (err) {
-                throw err
-            }
-        })
-
-        // deleteUser
-        it('should delete a user using deleteUser mutation', () => {
-            try {
-                const query = `
-                mutation{
-                    deleteUser(
-                        id: ${user.id}
-                    )
-                }
-                `
-                return request(app.getHttpServer())
-                    .post('/graphql')
-                    .send({ query })
-                    .expect(200)
-                    .expect((res) => {
-                        console.log("deleteUser 결과", JSON.stringify(res.body.data.deleteUser))
-                        expect(res.body.data.deleteUser).toEqual(true)
-                });
-            } catch (err) {
-                throw err
-            }
-        })
-    })
-
-
+    });
+  });
 });

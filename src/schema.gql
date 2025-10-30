@@ -37,8 +37,14 @@ type User {
 
   """쓰기 권한"""
   write_grade: String
+
+  """JPG만 허용 여부"""
   only_jpg: Int!
-  login_fail_count: Int!
+
+  """로그인 실패 횟수"""
+  login_fail_count: Int
+
+  """로그인 실패 시간"""
   login_fail_time: DateTime
 }
 
@@ -59,27 +65,42 @@ scalar DateTime
 scalar Date
 
 type Query {
+  """사용자 목록 조회 (페이징 및 필터링)"""
   getUsers(user_id: String, offset: Int! = 0, limit: Int! = 10): UsersWithCount!
-  getUserByid(id: Float!): User
+
+  """ID로 사용자 조회"""
+  getUserById(id: Int!): User
+
+  """부서 목록 조회 (페이징 및 필터링)"""
   getDepartments(offset: Int! = 0, limit: Int! = 10, name: String): DepartmentWithCount!
-  getDepartmentByid(id: Float!): Department
+
+  """ID로 부서 조회"""
+  getDepartmentById(id: Int!): Department
 }
 
 type Mutation {
+  """새 사용자 생성"""
   createUser(userInput: UserInput!): User!
+
+  """사용자 정보 수정"""
   updateUser(id: Int!, userInput: UserInput!): User!
+
+  """사용자 삭제"""
   deleteUser(id: Int!): Boolean!
-  createDepartment(createUserInput: CreateDepartmentInput!): Department!
+
+  """새 부서 생성"""
+  createDepartment(createDepartmentInput: CreateDepartmentInput!): Department!
+
+  """부서 정보 수정"""
   updateDepartment(id: Int!, createDepartmentInput: CreateDepartmentInput!): Department!
+
+  """부서 삭제"""
   deleteDepartment(id: Int!): Boolean!
 }
 
 input UserInput {
-  """사용자 아이디"""
-  id: Int
-
   """등급, 권한"""
-  grade: Float!
+  grade: Int!
 
   """사용자 아이디"""
   user_id: String!
@@ -94,17 +115,22 @@ input UserInput {
   email: String!
 
   """부서"""
-  department: Float!
+  department: Int!
 
   """읽기 권한"""
   read_grade: String!
 
   """쓰기 권한"""
   write_grade: String!
-  only_jpg: Float!
-  login_fail_count: Float!
-  login_fail_time: DateTime!
-  createdAt: DateTime!
+
+  """JPG만 허용 여부"""
+  only_jpg: Int!
+
+  """로그인 실패 횟수"""
+  login_fail_count: Int
+
+  """로그인 실패 시간"""
+  login_fail_time: DateTime
 }
 
 input CreateDepartmentInput {

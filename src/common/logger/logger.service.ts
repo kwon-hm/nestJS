@@ -1,58 +1,105 @@
-import { Injectable, Scope, LoggerService as NestLoggerService, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Scope,
+  LoggerService as NestLoggerService,
+  Inject,
+} from '@nestjs/common';
 import { Logger } from 'winston';
+import { RequestContext } from '../types/context.type';
 
 @Injectable({ scope: Scope.REQUEST })
 export class LoggerService implements NestLoggerService {
-  constructor(
-    @Inject('winston') private readonly logger: Logger
-  ) {}
+  constructor(@Inject('winston') private readonly logger: Logger) {}
 
-  log(message: string, context?: any) {
+  /**
+   * Log an info message.
+   * @param message - Log message
+   * @param context - Request context
+   */
+  log(message: string, context?: RequestContext): void {
     try {
-        const logMessage = `${context?.req?.logContext?.timestamp} ${context?.req?.logContext?.url} ${context?.req?.logContext?.ip}
-        ${message}`;
-        this.logger.info(logMessage);
+      const logContext = context?.req?.logContext;
+      const prefix = logContext
+        ? `${logContext.timestamp} ${logContext.url} ${logContext.ip}`
+        : '';
+      const logMessage = prefix ? `${prefix}\n${message}` : message;
+      this.logger.info(logMessage);
     } catch (err) {
-        throw new Error(`LoggerService log ${err}`)
+      console.error(`LoggerService log error: ${err}`);
     }
   }
 
-  error(message: string, context?: any, trace?: string, ) {
+  /**
+   * Log an error message.
+   * @param message - Error message
+   * @param context - Request context
+   * @param trace - Stack trace
+   */
+  error(message: string, context?: RequestContext, trace?: string): void {
     try {
-        const logMessage = `${context?.req?.logContext?.timestamp} ${context?.req?.logContext?.url} ${context?.req?.logContext?.ip}
-        ${message} ${trace ? `\nTrace: ${trace}` : ''}`;
-        this.logger.error(logMessage);
+      const logContext = context?.req?.logContext;
+      const prefix = logContext
+        ? `${logContext.timestamp} ${logContext.url} ${logContext.ip}`
+        : '';
+      const traceMessage = trace ? `\nTrace: ${trace}` : '';
+      const logMessage = prefix
+        ? `${prefix}\n${message}${traceMessage}`
+        : `${message}${traceMessage}`;
+      this.logger.error(logMessage);
     } catch (err) {
-        throw new Error(`LoggerService error ${err}`)
+      console.error(`LoggerService error logging failed: ${err}`);
     }
   }
 
-  warn(message: string, context?: any) {
+  /**
+   * Log a warning message.
+   * @param message - Warning message
+   * @param context - Request context
+   */
+  warn(message: string, context?: RequestContext): void {
     try {
-        const logMessage = `${context?.req?.logContext?.timestamp} ${context?.req?.logContext?.url} ${context?.req?.logContext?.ip}
-        ${message}`;
-        this.logger.warn(logMessage);
+      const logContext = context?.req?.logContext;
+      const prefix = logContext
+        ? `${logContext.timestamp} ${logContext.url} ${logContext.ip}`
+        : '';
+      const logMessage = prefix ? `${prefix}\n${message}` : message;
+      this.logger.warn(logMessage);
     } catch (err) {
-        throw new Error(`LoggerService warn ${err}`)
+      console.error(`LoggerService warn error: ${err}`);
     }
   }
 
-  debug(message: string, context?: any) {
+  /**
+   * Log a debug message.
+   * @param message - Debug message
+   * @param context - Request context
+   */
+  debug(message: string, context?: RequestContext): void {
     try {
-        const logMessage = `${context?.req?.logContext?.timestamp} ${context?.req?.logContext?.url} ${context?.req?.logContext?.ip}
-        ${message}`;
-        this.logger.debug(logMessage);
+      const logContext = context?.req?.logContext;
+      const prefix = logContext
+        ? `${logContext.timestamp} ${logContext.url} ${logContext.ip}`
+        : '';
+      const logMessage = prefix ? `${prefix}\n${message}` : message;
+      this.logger.debug(logMessage);
     } catch (err) {
-        throw new Error(`LoggerService debug ${err}`)       
+      console.error(`LoggerService debug error: ${err}`);
     }
   }
 
-  verbose(message: string, context?: any) {
+  /**
+   * Log a verbose message.
+   * @param message - Verbose message
+   * @param context - Request context
+   */
+  verbose(message: string, context?: RequestContext): void {
     try {
-        const logMessage = `${message} ${context ? JSON.stringify(context) : ''}`.trim();
-        this.logger.verbose(logMessage);
+      const logMessage = context
+        ? `${message} ${JSON.stringify(context)}`.trim()
+        : message;
+      this.logger.verbose(logMessage);
     } catch (err) {
-        throw new Error(`LoggerService verbose ${err}`)       
+      console.error(`LoggerService verbose error: ${err}`);
     }
   }
 }
